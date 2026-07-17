@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+pdfplumber
+pymupdf
+pandas
+chromadb
+openai
+sentence-transformers
+sqlalchemy
+python-multipart
+pydantic
+pydantic-settings
+python-dotenv
+tenacity

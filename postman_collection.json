@@ -1,0 +1,68 @@
+{
+  "info": {
+    "name": "Railway RAG Chatbot API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [{ "key": "base_url", "value": "http://localhost:8000" }],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": { "method": "GET", "url": "{{base_url}}/health" }
+    },
+    {
+      "name": "Ingest Single PDF",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/ingest",
+        "body": {
+          "mode": "formdata",
+          "formdata": [{ "key": "file", "type": "file", "src": "" }]
+        }
+      }
+    },
+    {
+      "name": "Bulk Ingest (data/raw_pdfs folder)",
+      "request": { "method": "POST", "url": "{{base_url}}/ingest/bulk" }
+    },
+    {
+      "name": "List Documents",
+      "request": { "method": "GET", "url": "{{base_url}}/documents" }
+    },
+    {
+      "name": "Query - Table Lookup (exact rate)",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/query",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"question\": \"What is the Scale-L rate for 40 kg over 620 km?\"}"
+        }
+      }
+    },
+    {
+      "name": "Query - Semantic (policy text)",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/query",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"question\": \"What is the minimum distance and minimum charge for booking a parcel?\"}"
+        }
+      }
+    },
+    {
+      "name": "Query - Out of scope (should refuse, not hallucinate)",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/query",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"question\": \"What is the refund policy for cancelled AC first class tickets?\"}"
+        }
+      }
+    }
+  ]
+}
