@@ -2,6 +2,13 @@ venv/
 __pycache__/
 *.pyc
 .env
-data/chroma/
+
+# Raw PDFs are excluded (240 files, large, and not needed once processed —
+# the whole point of committing data/chroma + the .db below is that the
+# deployed app doesn't need to re-ingest anything).
 data/raw_pdfs/*.pdf
-data/*.db
+
+# NOTE: data/chroma/ and data/*.db are INTENTIONALLY NOT ignored.
+# They're committed on purpose so a free-tier deploy (no persistent disk)
+# still serves the full pre-ingested knowledge base without re-processing
+# 240 PDFs on every cold start.

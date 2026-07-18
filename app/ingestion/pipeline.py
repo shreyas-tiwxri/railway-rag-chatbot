@@ -20,9 +20,11 @@ def ingest_pdf(pdf_path: str, source_url: str | None = None) -> dict:
         doc_record.title = get_pdf_title(pdf_path)
         doc_record.num_pages = len(pages)
 
+        # 1. Prose -> chunks -> embeddings -> vector store
         chunks = chunk_document(pages)
         add_chunks(doc_record.id, filename, chunks)
 
+        # 2. Tables -> structured rows -> SQL
         table_rows = extract_rate_tables_from_pdf(pdf_path)
         for row in table_rows:
             session.add(RateTableRow(document_id=doc_record.id, **row))
@@ -46,15 +48,35 @@ def ingest_pdf(pdf_path: str, source_url: str | None = None) -> dict:
         session.close()
 
 
+def already_ingested(filename: str) -> bool:
+    session = SessionLocal()
+    try:
+        existing = (
+            session.query(Document)
+            .filter(Document.filename == filename, Document.status == "done")
+            .first()
+        )
+        return existing is not None
+    finally:
+        session.close()
+
+
 def ingest_folder(folder_path: str) -> list[dict]:
     """Bulk ingest — point this at data/raw_pdfs/ after manually downloading
-    the 20+ PDFs from the Railway Board page (site disallows automated scraping)."""
+    the 20+ PDFs from the Railway Board page (site disallows automated scraping).
+    Skips files that were already successfully ingested, so re-running this after
+    adding a few new PDFs doesn't re-embed everything and create duplicate chunks."""
     results = []
     pdf_files = sorted(f for f in os.listdir(folder_path) if f.lower().endswith(".pdf"))
     total = len(pdf_files)
     print(f"\n=== Starting bulk ingest of {total} PDFs ===")
 
     for i, fname in enumerate(pdf_files, 1):
+        if already_ingested(fname):
+            print(f"[{i}/{total}] Skipping (already ingested): {fname}")
+            results.append({"filename": fname, "status": "already_ingested"})
+            continue
+
         full_path = os.path.join(folder_path, fname)
         print(f"[{i}/{total}] Processing: {fname}")
         try:

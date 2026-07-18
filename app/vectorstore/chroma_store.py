@@ -20,14 +20,25 @@ def add_chunks(document_id: int, filename: str, chunks: list[dict]):
     _collection.add(ids=ids, embeddings=embeddings, documents=texts, metadatas=metadatas)
 
 
-def semantic_search(query: str, top_k: int = 5) -> list[dict]:
+def semantic_search(query: str, top_k: int = 8) -> list[dict]:
     query_embedding = embed_texts([query])[0]
-    results = _collection.query(query_embeddings=[query_embedding], n_results=top_k)
+    # over-fetch, then dedupe by text so repeated ingestions don't produce
+    # repetitive/duplicated context for the LLM
+    results = _collection.query(query_embeddings=[query_embedding], n_results=top_k * 3)
+
+    seen_texts = set()
     hits = []
     for i in range(len(results["ids"][0])):
+        text = results["documents"][0][i]
+        normalized = " ".join(text.split())[:300]  # dedupe key: normalized text prefix
+        if normalized in seen_texts:
+            continue
+        seen_texts.add(normalized)
         hits.append({
-            "text": results["documents"][0][i],
+            "text": text,
             "metadata": results["metadatas"][0][i],
             "distance": results["distances"][0][i],
         })
+        if len(hits) >= top_k:
+            break
     return hits
