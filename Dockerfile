@@ -15,7 +15,7 @@ COPY . .
 # Pre-warm the sentence-transformers model into the image so the first
 # request isn't slow downloading it, and so it works even if the deploy
 # environment has restricted outbound internet after build.
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+RUN python -c "from fastembed import TextEmbedding; TextEmbedding(model_name='BAAI/bge-small-en-v1.5')"
 
 EXPOSE 8000
 

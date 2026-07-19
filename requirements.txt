@@ -5,10 +5,12 @@ pymupdf
 pandas
 chromadb
 openai
-sentence-transformers
 sqlalchemy
 python-multipart
 pydantic
 pydantic-settings
 python-dotenv
 tenacity
+beautifulsoup4
+requests
+fastembed
