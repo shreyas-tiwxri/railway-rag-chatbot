@@ -1,10 +1,17 @@
 # Railway Documents RAG Chatbot
 
+**Live demo:** https://railway-rag-chatbot.onrender.com/chat/
+(Free-tier hosting — first request after inactivity may take 30-50s to wake up.)
+
 Hybrid Retrieval-Augmented Generation API over Indian Railways parcel/luggage/
 freight tariff and policy PDFs. Combines **structured SQL lookups** for tabular
 rate data with **vector semantic search** for prose/policy text, routed by a
 lightweight query classifier — because pure vector RAG gives wrong or vague
 answers on numeric table lookups.
+
+Fully free stack: local ONNX-based embeddings (fastembed, no API key, low
+memory footprint for free-tier hosting) + Groq's free-tier LLM API for answer
+generation (no credit card required).
 
 See `ROADMAP.md` for the full architecture rationale and day-by-day build plan.
 
