@@ -51,6 +51,9 @@ def list_documents():
 
 @router.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest):
-    retrieval_result = retrieve_context(request.question)
-    generation_result = generate_answer(request.question, retrieval_result)
-    return generation_result
+    try:
+        retrieval_result = retrieve_context(request.question)
+        generation_result = generate_answer(request.question, retrieval_result, request.history)
+        return generation_result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Query failed: {type(e).__name__}: {e}")

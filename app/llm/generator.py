@@ -43,7 +43,7 @@ def build_context_string(retrieval_result: dict) -> str:
     return "\n".join(parts) if parts else "No relevant context found in the knowledge base."
 
 
-def generate_answer(user_query: str, retrieval_result: dict) -> dict:
+def generate_answer(user_query: str, retrieval_result: dict, history: list[dict] | None = None) -> dict:
     context = build_context_string(retrieval_result)
 
     # Deterministic shortcut: if this was a pure table lookup with exact match(es),
@@ -67,11 +67,25 @@ def generate_answer(user_query: str, retrieval_result: dict) -> dict:
             answer = "Found multiple matching rates:\n" + "\n".join(lines)
         return {"answer": answer, "context_used": context, "retrieval_mode": retrieval_result["mode"]}
 
+    history_text = ""
+    if history:
+        turns = []
+        for turn in history[-3:]:  # last 3 turns only, keeps the prompt small
+            q, a = turn.get("question", ""), turn.get("answer", "")
+            if q and a:
+                turns.append(f"Previous Q: {q}\nPrevious A: {a}")
+        if turns:
+            history_text = (
+                "CONVERSATION HISTORY (use this only to resolve follow-up references "
+                "like 'it' or 'that rate' — the CONTEXT below is still the source of truth "
+                "for facts):\n" + "\n\n".join(turns) + "\n\n"
+            )
+
     response = client.chat.completions.create(
         model=settings.generation_model,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"CONTEXT:\n{context}\n\nQUESTION: {user_query}"},
+            {"role": "user", "content": f"{history_text}CONTEXT:\n{context}\n\nQUESTION: {user_query}"},
         ],
         temperature=0.1,
     )

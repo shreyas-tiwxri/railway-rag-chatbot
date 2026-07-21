@@ -16,3 +16,4 @@ requests
 fastembed
 pytesseract
 Pillow
+pytest

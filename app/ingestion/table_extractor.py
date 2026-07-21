@@ -16,8 +16,15 @@ and it's a better story in an interview than "I called camelot and hoped."
 For genuinely different table shapes in other PDFs, add a new `parse_x_table()`
 function here following the same pattern, and register it in TABLE_PARSERS below.
 """
+import os
 import re
 import pdfplumber
+
+# Only run the rate-table parser on filenames that look like the actual rate
+# table document. Running this regex parser on every PDF was causing false
+# positives — unrelated circulars with number sequences occasionally matched
+# the DISTANCE_ROW_RE pattern and polluted rate_table with garbage rows.
+RATE_TABLE_FILENAME_HINTS = ["parcel_rate", "annexure", "rate_table"]
 
 DISTANCE_ROW_RE = re.compile(
     r"^(\d{1,5})\s*[\-‐–]\s*(\d{1,5})\s+((?:\d+\.\d{2}\s*){10})$"
@@ -70,8 +77,18 @@ def parse_rate_table_text(full_text: str, page_number: int | None = None) -> lis
     return rows
 
 
+def looks_like_rate_table_doc(pdf_path: str) -> bool:
+    fname_lower = os.path.basename(pdf_path).lower()
+    return any(hint in fname_lower for hint in RATE_TABLE_FILENAME_HINTS)
+
+
 def extract_rate_tables_from_pdf(pdf_path: str) -> list[dict]:
-    """Runs the parser page-by-page so each row keeps correct page attribution."""
+    """Runs the parser page-by-page so each row keeps correct page attribution.
+    Skips documents that don't look like the rate table, to avoid false-positive
+    matches from unrelated circulars."""
+    if not looks_like_rate_table_doc(pdf_path):
+        return []
+
     all_rows = []
     with pdfplumber.open(pdf_path) as pdf:
         for i, page in enumerate(pdf.pages):
