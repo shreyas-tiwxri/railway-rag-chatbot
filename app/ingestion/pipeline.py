@@ -19,6 +19,7 @@ def ingest_pdf(pdf_path: str, source_url: str | None = None) -> dict:
         pages = extract_pages_text(pdf_path)
         doc_record.title = get_pdf_title(pdf_path)
         doc_record.num_pages = len(pages)
+        ocr_pages = sum(1 for p in pages if p.get("ocr_used"))
 
         # 1. Prose -> chunks -> embeddings -> vector store
         chunks = chunk_document(pages)
@@ -36,6 +37,7 @@ def ingest_pdf(pdf_path: str, source_url: str | None = None) -> dict:
             "document_id": doc_record.id,
             "filename": filename,
             "pages": len(pages),
+            "ocr_pages_used": ocr_pages,
             "prose_chunks_indexed": len(chunks),
             "table_rows_extracted": len(table_rows),
             "status": "done",
@@ -82,7 +84,8 @@ def ingest_folder(folder_path: str) -> list[dict]:
         try:
             result = ingest_pdf(full_path)
             print(f"    -> done: {result['prose_chunks_indexed']} chunks, "
-                  f"{result['table_rows_extracted']} table rows")
+                  f"{result['table_rows_extracted']} table rows"
+                  + (f", {result['ocr_pages_used']} page(s) OCR'd" if result.get('ocr_pages_used') else ""))
             results.append(result)
         except Exception as e:
             print(f"    -> FAILED: {e}")

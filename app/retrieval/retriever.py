@@ -47,6 +47,6 @@ def retrieve_context(user_query: str) -> dict:
         ]
 
     if mode in ("semantic", "both"):
-        result["semantic_chunks"] = semantic_search(user_query, top_k=8)
+        result["semantic_chunks"] = semantic_search(user_query, top_k=12)
 
     return result

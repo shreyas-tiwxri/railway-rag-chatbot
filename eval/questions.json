@@ -1,0 +1,98 @@
+[
+  {
+    "id": 1,
+    "category": "table",
+    "question": "What is the Scale-L rate for 10 kg over 50 km?",
+    "expected_keywords": ["7.38"]
+  },
+  {
+    "id": 2,
+    "category": "table",
+    "question": "What is the Scale-P rate for 20 kg over 100 km?",
+    "expected_keywords": ["11.17"]
+  },
+  {
+    "id": 3,
+    "category": "table",
+    "question": "What is the Scale-R rate for 30 kg over 200 km?",
+    "expected_keywords": ["37.80", "37.8"]
+  },
+  {
+    "id": 4,
+    "category": "table",
+    "question": "What is the Scale-S rate for 10 kg over 1000 km?",
+    "expected_keywords": ["13.72"]
+  },
+  {
+    "id": 5,
+    "category": "table",
+    "question": "What is the Scale-L rate for 40 kg over 620 km?",
+    "expected_keywords": ["128.53"]
+  },
+  {
+    "id": 6,
+    "category": "semantic",
+    "question": "What is the minimum distance and minimum charge for booking a parcel?",
+    "expected_keywords": ["50", "30"]
+  },
+  {
+    "id": 7,
+    "category": "semantic",
+    "question": "What is the minimum distance and minimum charge for registered newspapers?",
+    "expected_keywords": ["250", "2"]
+  },
+  {
+    "id": 8,
+    "category": "semantic",
+    "question": "What percentage of Scale-S rate applies to registered newspapers and magazines?",
+    "expected_keywords": ["45"]
+  },
+  {
+    "id": 9,
+    "category": "semantic",
+    "question": "What is the maximum permissible weight for a package on Broad Gauge?",
+    "expected_keywords": ["150"]
+  },
+  {
+    "id": 10,
+    "category": "semantic",
+    "question": "What are the maximum dimensions for a package on Broad Gauge?",
+    "expected_keywords": ["2.0", "1.5", "1.25"]
+  },
+  {
+    "id": 11,
+    "category": "semantic",
+    "question": "How is a bulky article defined and how is it charged?",
+    "expected_keywords": ["100", "double"]
+  },
+  {
+    "id": 12,
+    "category": "semantic",
+    "question": "How much luggage weight is equivalent to 28 cubic decimeters on a volumetric basis?",
+    "expected_keywords": ["4"]
+  },
+  {
+    "id": 13,
+    "category": "semantic",
+    "question": "At what rate are animals and birds charged in parcel vans?",
+    "expected_keywords": ["25"]
+  },
+  {
+    "id": 14,
+    "category": "semantic",
+    "question": "Is transhipment of parcels allowed at intermediate stations?",
+    "expected_keywords": ["transhipment"]
+  },
+  {
+    "id": 15,
+    "category": "semantic",
+    "question": "What is Scale-R used for?",
+    "expected_keywords": ["Rajdhani"]
+  },
+  {
+    "id": 16,
+    "category": "refusal",
+    "question": "What is the cancellation policy for AC first class train tickets?",
+    "expected_keywords": ["cannot confirm"]
+  }
+]

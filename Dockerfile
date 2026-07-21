@@ -2,9 +2,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# System deps for pdfplumber/pymupdf
+# System deps for pdfplumber/pymupdf, plus Tesseract for OCR fallback on scanned PDFs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
