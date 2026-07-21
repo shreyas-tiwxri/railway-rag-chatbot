@@ -37,7 +37,7 @@ OUTPUT_DIR = os.path.join(os.path.dirname(__file__), "..", "data", "raw_pdfs")
 DELAY_SECONDS = 2  # be polite, don't hammer a gov server
 DOMAIN = "indianrailways.gov.in"
 
-RECENT_YEARS = ["2021", "2022", "2023", "2024", "2025", "2026"]  # only download circulars from these years
+RECENT_YEARS = ["2017", "2018", "2019", "2020", "2021", "2022", "2023", "2024", "2025", "2026"]  # only download circulars from these years
                                           # (edit this list to grab more/fewer years)
 
 
@@ -153,7 +153,7 @@ if __name__ == "__main__":
     if not filtered_links:
         print("No PDFs found for the configured RECENT_YEARS. Edit the RECENT_YEARS list "
               "at the top of this script to include more years, then re-run.")
-    elif len(filtered_links) > 500:
+    elif len(filtered_links) > 600:
         print(f"WARNING: {len(filtered_links)} PDFs matched — narrow RECENT_YEARS further "
               f"if you want fewer.")
         print("First 10 matches:")

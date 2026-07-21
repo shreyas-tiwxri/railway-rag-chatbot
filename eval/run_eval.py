@@ -24,8 +24,10 @@ def run_eval(base_url: str):
     for q in questions:
         try:
             resp = requests.post(f"{base_url}/query", json={"question": q["question"]}, timeout=60)
-            resp.raise_for_status()
-            answer = resp.json().get("answer", "")
+            if resp.status_code != 200:
+                answer = f"[ERROR {resp.status_code}: {resp.text}]"
+            else:
+                answer = resp.json().get("answer", "")
         except Exception as e:
             answer = f"[ERROR: {e}]"
 
