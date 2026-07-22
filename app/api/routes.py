@@ -1,11 +1,13 @@
 import os
+import json
 import shutil
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi.responses import StreamingResponse
 from app.config import settings
 from app.api.schemas import QueryRequest, QueryResponse, DocumentOut, UrlIngestRequest
 from app.ingestion.pipeline import ingest_pdf, ingest_folder, ingest_url, SUPPORTED_EXTENSIONS
 from app.retrieval.retriever import retrieve_context
-from app.llm.generator import generate_answer
+from app.llm.generator import generate_answer, stream_answer
 from app.db.models import SessionLocal, Document
 
 router = APIRouter()
@@ -67,9 +69,33 @@ def list_documents():
 
 @router.post("/query", response_model=QueryResponse)
 def query(request: QueryRequest):
+    """Non-streaming - used by Postman, the eval harness, and any API client
+    that just wants the full answer in one response."""
     try:
         retrieval_result = retrieve_context(request.question)
         generation_result = generate_answer(request.question, retrieval_result, request.history)
         return generation_result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Query failed: {type(e).__name__}: {e}")
+
+
+@router.post("/query/stream")
+def query_stream(request: QueryRequest):
+    """Streaming version - used by the chat UI for word-by-word responses.
+    Protocol: first line is a JSON header ({"retrieval_mode": ...}) followed
+    by a "\\n---\\n" separator, then the answer text streams token by token."""
+    try:
+        retrieval_result = retrieve_context(request.question)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Retrieval failed: {type(e).__name__}: {e}")
+
+    def event_generator():
+        header = json.dumps({"retrieval_mode": retrieval_result["mode"]})
+        yield header + "\n---\n"
+        try:
+            for chunk in stream_answer(request.question, retrieval_result, request.history):
+                yield chunk
+        except Exception as e:
+            yield f"\n[ERROR: {type(e).__name__}: {e}]"
+
+    return StreamingResponse(event_generator(), media_type="text/plain")

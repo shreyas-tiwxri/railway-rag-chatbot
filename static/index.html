@@ -363,30 +363,58 @@
     setBusy(true);
 
     const thinkingBubble = addMessage("bot", "");
-    thinkingBubble.querySelector("div:last-child").innerHTML =
-      '<span class="thinking">Consulting records</span>';
+    const textDiv = thinkingBubble.querySelector("div:last-child");
+    textDiv.innerHTML = '<span class="thinking">Consulting records</span>';
+
+    let fullAnswer = "";
 
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetch("/query/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question, history: conversationHistory.slice(-3) }),
       });
 
-      if (!res.ok) throw new Error("Server error: " + res.status);
-      const data = await res.json();
+      if (!res.ok || !res.body) throw new Error("Server error: " + res.status);
 
-      thinkingBubble.querySelector(".meta")?.remove();
-      const metaEl = document.createElement("div");
-      metaEl.className = "meta";
-      metaEl.innerHTML = "Response " + modeTag(data.retrieval_mode);
-      thinkingBubble.prepend(metaEl);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let headerParsed = false;
 
-      thinkingBubble.querySelector("div:last-child").textContent = data.answer;
-      conversationHistory.push({ question, answer: data.answer });
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        if (!headerParsed) {
+          const sepIndex = buffer.indexOf("\n---\n");
+          if (sepIndex === -1) continue; // keep waiting for the full header
+
+          const headerStr = buffer.slice(0, sepIndex);
+          let mode = "semantic";
+          try { mode = JSON.parse(headerStr).retrieval_mode; } catch (e) { /* ignore */ }
+          buffer = buffer.slice(sepIndex + 5);
+          headerParsed = true;
+
+          const metaEl = document.createElement("div");
+          metaEl.className = "meta";
+          metaEl.innerHTML = "Response " + modeTag(mode);
+          thinkingBubble.prepend(metaEl);
+          textDiv.textContent = "";
+        }
+
+        if (headerParsed && buffer) {
+          fullAnswer += buffer;
+          textDiv.textContent = fullAnswer;
+          buffer = "";
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+        }
+      }
+
+      conversationHistory.push({ question, answer: fullAnswer });
     } catch (err) {
-      thinkingBubble.querySelector("div:last-child").textContent =
-        "Could not reach the server. Is the API running?";
+      textDiv.textContent = "Could not reach the server. Is the API running?";
     } finally {
       setBusy(false);
       input.focus();

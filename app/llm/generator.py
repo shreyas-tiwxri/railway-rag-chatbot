@@ -16,13 +16,13 @@ Rules:
   to answer the question as best you can, even if the match is partial or the
   wording doesn't exactly match the question. Summarize what the text says that
   relates to the question. Do NOT refuse just because the answer isn't a perfect
-  or complete match — extract and explain whatever relevant information exists.
+  or complete match - extract and explain whatever relevant information exists.
 - Only respond "I cannot confirm this from the available documents" if the context
   is completely empty, or is about a totally unrelated topic with zero connection
   to the question.
 - Never invent a rate, distance slab, or rule that isn't in the context.
 - Keep answers concise. ALWAYS cite the source as [filename, page N] for every
-  fact you state, using the filename and page shown in the context — this is
+  fact you state, using the filename and page shown in the context - this is
   mandatory, not optional, so the user knows which document to check.
 """
 
@@ -45,45 +45,53 @@ def build_context_string(retrieval_result: dict) -> str:
     return "\n".join(parts) if parts else "No relevant context found in the knowledge base."
 
 
+def build_history_text(history: list[dict] | None) -> str:
+    if not history:
+        return ""
+    turns = []
+    for turn in history[-3:]:
+        q, a = turn.get("question", ""), turn.get("answer", "")
+        if q and a:
+            turns.append(f"Previous Q: {q}\nPrevious A: {a}")
+    if not turns:
+        return ""
+    return (
+        "CONVERSATION HISTORY (use this only to resolve follow-up references "
+        "like 'it' or 'that rate' - the CONTEXT below is still the source of truth "
+        "for facts):\n" + "\n\n".join(turns) + "\n\n"
+    )
+
+
+def _deterministic_table_answer(retrieval_result: dict) -> str:
+    rows = retrieval_result["table_rows"]
+    if len(rows) == 1:
+        r = rows[0]
+        return (
+            f"The rate is Rs. {r['rate_rs']} for {r['scale']} ({r['category']}), "
+            f"distance {r['distance_range_km']} km, weight up to {r['weight_slab_kg']} kg "
+            f"(source: {r.get('filename', 'unknown')}, page {r['page_number']})."
+        )
+    lines = [
+        f"- {r['scale']} ({r['category']}): {r['distance_range_km']} km, "
+        f"up to {r['weight_slab_kg']} kg -> Rs. {r['rate_rs']} "
+        f"(source: {r.get('filename', 'unknown')}, page {r['page_number']})"
+        for r in rows
+    ]
+    return "Found multiple matching rates:\n" + "\n".join(lines)
+
+
 def generate_answer(user_query: str, retrieval_result: dict, history: list[dict] | None = None) -> dict:
+    """Non-streaming version - used by /query (Postman, eval harness, etc)."""
     context = build_context_string(retrieval_result)
 
     # Deterministic shortcut: if this was a pure table lookup with exact match(es),
     # skip the LLM entirely. The small free model tends to second-guess correct
     # numeric matches, so trust the SQL lookup instead of asking it to "confirm."
     if retrieval_result["mode"] == "table" and retrieval_result["table_rows"]:
-        rows = retrieval_result["table_rows"]
-        if len(rows) == 1:
-            r = rows[0]
-            answer = (
-                f"The rate is Rs. {r['rate_rs']} for {r['scale']} ({r['category']}), "
-                f"distance {r['distance_range_km']} km, weight up to {r['weight_slab_kg']} kg "
-                f"(source: {r.get('filename', 'unknown')}, page {r['page_number']})."
-            )
-        else:
-            lines = [
-                f"- {r['scale']} ({r['category']}): {r['distance_range_km']} km, "
-                f"up to {r['weight_slab_kg']} kg -> Rs. {r['rate_rs']} "
-                f"(source: {r.get('filename', 'unknown')}, page {r['page_number']})"
-                for r in rows
-            ]
-            answer = "Found multiple matching rates:\n" + "\n".join(lines)
+        answer = _deterministic_table_answer(retrieval_result)
         return {"answer": answer, "context_used": context, "retrieval_mode": retrieval_result["mode"]}
 
-    history_text = ""
-    if history:
-        turns = []
-        for turn in history[-3:]:  # last 3 turns only, keeps the prompt small
-            q, a = turn.get("question", ""), turn.get("answer", "")
-            if q and a:
-                turns.append(f"Previous Q: {q}\nPrevious A: {a}")
-        if turns:
-            history_text = (
-                "CONVERSATION HISTORY (use this only to resolve follow-up references "
-                "like 'it' or 'that rate' — the CONTEXT below is still the source of truth "
-                "for facts):\n" + "\n\n".join(turns) + "\n\n"
-            )
-
+    history_text = build_history_text(history)
     response = client.chat.completions.create(
         model=settings.generation_model,
         messages=[
@@ -97,3 +105,30 @@ def generate_answer(user_query: str, retrieval_result: dict, history: list[dict]
         "context_used": context,
         "retrieval_mode": retrieval_result["mode"],
     }
+
+
+def stream_answer(user_query: str, retrieval_result: dict, history: list[dict] | None = None):
+    """Generator yielding answer text chunks as they're produced - used by
+    /query/stream for the word-by-word chat UI experience. Table-lookup mode
+    is already instant (no LLM call), so it just yields the whole answer as
+    a single chunk instead of a fake typing effect."""
+    if retrieval_result["mode"] == "table" and retrieval_result["table_rows"]:
+        yield _deterministic_table_answer(retrieval_result)
+        return
+
+    context = build_context_string(retrieval_result)
+    history_text = build_history_text(history)
+
+    stream = client.chat.completions.create(
+        model=settings.generation_model,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": f"{history_text}CONTEXT:\n{context}\n\nQUESTION: {user_query}"},
+        ],
+        temperature=0.1,
+        stream=True,
+    )
+    for chunk in stream:
+        delta = chunk.choices[0].delta.content
+        if delta:
+            yield delta
