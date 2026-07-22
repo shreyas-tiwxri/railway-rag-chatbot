@@ -21,7 +21,9 @@ Rules:
   is completely empty, or is about a totally unrelated topic with zero connection
   to the question.
 - Never invent a rate, distance slab, or rule that isn't in the context.
-- Keep answers concise. Cite the source document/page when possible.
+- Keep answers concise. ALWAYS cite the source as [filename, page N] for every
+  fact you state, using the filename and page shown in the context — this is
+  mandatory, not optional, so the user knows which document to check.
 """
 
 
@@ -33,7 +35,7 @@ def build_context_string(retrieval_result: dict) -> str:
             parts.append(
                 f"- {row['scale']} ({row['category']}): distance {row['distance_range_km']} km, "
                 f"weight up to {row['weight_slab_kg']} kg -> Rs. {row['rate_rs']} "
-                f"(page {row['page_number']})"
+                f"(source: {row.get('filename', 'unknown')}, page {row['page_number']})"
             )
     if retrieval_result["semantic_chunks"]:
         parts.append("\nRELEVANT DOCUMENT TEXT:")
@@ -56,12 +58,13 @@ def generate_answer(user_query: str, retrieval_result: dict, history: list[dict]
             answer = (
                 f"The rate is Rs. {r['rate_rs']} for {r['scale']} ({r['category']}), "
                 f"distance {r['distance_range_km']} km, weight up to {r['weight_slab_kg']} kg "
-                f"(source: page {r['page_number']})."
+                f"(source: {r.get('filename', 'unknown')}, page {r['page_number']})."
             )
         else:
             lines = [
                 f"- {r['scale']} ({r['category']}): {r['distance_range_km']} km, "
-                f"up to {r['weight_slab_kg']} kg -> Rs. {r['rate_rs']} (page {r['page_number']})"
+                f"up to {r['weight_slab_kg']} kg -> Rs. {r['rate_rs']} "
+                f"(source: {r.get('filename', 'unknown')}, page {r['page_number']})"
                 for r in rows
             ]
             answer = "Found multiple matching rates:\n" + "\n".join(lines)

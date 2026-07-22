@@ -42,6 +42,7 @@ def retrieve_context(user_query: str) -> dict:
                 "weight_slab_kg": r.weight_slab_kg,
                 "rate_rs": r.rate_rs,
                 "page_number": r.page_number,
+                "filename": r.filename,
             }
             for r in rows
         ]

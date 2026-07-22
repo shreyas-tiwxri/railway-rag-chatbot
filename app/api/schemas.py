@@ -6,6 +6,10 @@ class QueryRequest(BaseModel):
     history: list[dict] = []
 
 
+class UrlIngestRequest(BaseModel):
+    url: str
+
+
 class QueryResponse(BaseModel):
     answer: str
     retrieval_mode: str

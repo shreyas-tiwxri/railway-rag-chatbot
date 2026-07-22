@@ -33,6 +33,7 @@ class RateTableRow(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     document_id = Column(Integer, nullable=False)
+    filename = Column(String, nullable=True)     # source document, for citations
     scale = Column(String, index=True)          # e.g. "Scale-R", "Scale-P", "Scale-S", "Scale-L"
     category = Column(String, nullable=True)    # e.g. "Luggage", "Premier Parcel", "Standard Parcel"
     distance_min_km = Column(Integer, index=True)
