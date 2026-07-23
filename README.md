@@ -149,18 +149,6 @@ data/
   follow-up that depends heavily on prior context for *retrieval* (not just
   phrasing) may not find the right chunks.
 - No auth/rate-limiting yet — fine for a portfolio demo, add before any public deploy.
-
-## What to say about this in an interview
-- **Why hybrid retrieval, not pure vector RAG**: numeric table lookups (e.g.
-  "rate for 40kg over 620km") need exact matching, not similarity search —
-  embeddings are bad at exact numeric comparison. Structured SQL handles that
-  deterministically; vector search handles prose/policy questions.
-- **Why the LLM is bypassed for table lookups**: smaller/free models tend to
-  second-guess correct numeric matches ("I cannot confirm the rate is in
-  range X" even when it clearly is). Removing the LLM from the critical path
-  for deterministic lookups eliminates a whole class of hallucination risk.
-- **The OCR fallback** is a good example of noticing a silent failure mode
-  (scanned PDFs producing empty text) and fixing the root cause instead of
   just working around it.
 - **The measured eval numbers** are a stronger claim than "it works" — and
   the process of building the eval set caught a bug in my own test data
